@@ -170,4 +170,156 @@ File Edit View
 
 ros2 pkg create mqtt_pkg --build-type ament_python --dependencies rclpy std_msgs
 
+🧭 บทเรียน: เริ่มต้นใช้งาน ROS 2 ด้วย Python
+🔧 ขั้นตอนที่ 1: สร้าง ROS 2 Workspace และ Package
+เปิดเทอร์มินัลและสร้าง workspace ใหม่:
 
+bash
+คัดลอก
+แก้ไข
+mkdir -p ~/ros2_ws/src
+cd ~/ros2_ws/src
+สร้างแพ็กเกจชื่อ mqtt_pkg ที่ใช้ ament_python:
+
+bash
+คัดลอก
+แก้ไข
+ros2 pkg create mqtt_pkg --build-type ament_python --dependencies rclpy std_msgs
+คำสั่งนี้จะสร้างโครงสร้างพื้นฐานของแพ็กเกจในโฟลเดอร์ mqtt_pkg
+
+🧠 ขั้นตอนที่ 2: สร้าง Node สำหรับ MQTT Publisher
+สร้างไฟล์ pub_node.py ภายในโฟลเดอร์ mqtt_pkg/mqtt_pkg/:
+
+bash
+คัดลอก
+แก้ไข
+cd ~/ros2_ws/src/mqtt_pkg/mqtt_pkg
+touch pub_node.py
+แก้ไขไฟล์ pub_node.py ด้วยเนื้อหาต่อไปนี้:
+
+python
+คัดลอก
+แก้ไข
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+
+class MqttPublisher(Node):
+    def __init__(self):
+        super().__init__('mqtt_publisher')
+        self.publisher_ = self.create_publisher(String, 'mqtt_topic', 10)
+        timer_period = 1.0  # วินาที
+        self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.count = 0
+
+    def timer_callback(self):
+        msg = String()
+        msg.data = f'Hello MQTT: {self.count}'
+        self.publisher_.publish(msg)
+        self.get_logger().info(f'Publishing: "{msg.data}"')
+        self.count += 1
+
+def main(args=None):
+    rclpy.init(args=args)
+    mqtt_publisher = MqttPublisher()
+    rclpy.spin(mqtt_publisher)
+    mqtt_publisher.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+ทำให้ไฟล์สามารถรันได้:
+
+bash
+คัดลอก
+แก้ไข
+chmod +x pub_node.py
+🛠️ ขั้นตอนที่ 3: แก้ไขไฟล์ setup.py และ package.xml
+แก้ไขไฟล์ setup.py ในโฟลเดอร์ mqtt_pkg ให้มีเนื้อหาดังนี้:
+
+python
+คัดลอก
+แก้ไข
+from setuptools import setup
+
+package_name = 'mqtt_pkg'
+
+setup(
+    name=package_name,
+    version='0.0.0',
+    packages=[package_name],
+    data_files=[
+        ('share/ament_index/resource_index/packages',
+            ['resource/' + package_name]),
+        ('share/' + package_name, ['package.xml']),
+    ],
+    install_requires=['setuptools'],
+    zip_safe=True,
+    maintainer='innovedex',
+    maintainer_email='innovedex@todo.todo',
+    description='MQTT Publisher Package',
+    license='TODO: License declaration',
+    tests_require=['pytest'],
+    entry_points={
+        'console_scripts': [
+            'pub_node = mqtt_pkg.pub_node:main',
+        ],
+    },
+)
+หมายเหตุ: ตรวจสอบให้แน่ใจว่าไม่มีเครื่องหมายพิเศษหรืออักขระที่ไม่ถูกต้องในไฟล์ setup.py ซึ่งอาจทำให้เกิดข้อผิดพลาดในการคอมไพล์
+
+แก้ไขไฟล์ package.xml ให้รวม dependencies ที่จำเป็น:
+
+xml
+คัดลอก
+แก้ไข
+<?xml version="1.0"?>
+<package format="2">
+  <name>mqtt_pkg</name>
+  <version>0.0.0</version>
+  <description>MQTT Publisher Package</description>
+  <maintainer email="innovedex@todo.todo">innovedex</maintainer>
+  <license>TODO: License declaration</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+
+  <exec_depend>python3</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
+🔨 ขั้นตอนที่ 4: สร้างและติดตั้งแพ็กเกจ
+กลับไปที่ root ของ workspace:
+
+bash
+คัดลอก
+แก้ไข
+cd ~/ros2_ws
+สร้างแพ็กเกจด้วย colcon:
+
+bash
+คัดลอก
+แก้ไข
+colcon build --packages-select mqtt_pkg
+แหล่งที่มาของ workspace:
+
+bash
+คัดลอก
+แก้ไข
+source install/setup.bash
+🚀 ขั้นตอนที่ 5: รัน Node
+รัน Node ที่สร้างขึ้น:
+
+bash
+คัดลอก
+แก้ไข
+ros2 run mqtt_pkg pub_node
+คุณควรเห็นข้อความที่ถูกพิมพ์ออกมาทุกวินาทีในเทอร์มินัล
+
+หากคุณต้องการขยายบทเรียนเพิ่มเติม เช่น การสร้าง Subscriber, การใช้งานกับเซ็นเซอร์, หรือการเชื่อมต่อกับ MQTT Broker ภายนอก โปรดแจ้งให้ทราบครับ ผมยินดีที่จะช่วยเสริมเนื้อหาให้ครบถ้วนยิ่งขึ้น!
